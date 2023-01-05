@@ -1,0 +1,13 @@
+image: python:3.7.0 # Specifies Python version
+clone:
+  depth: full # Tell to clone the repository all deepth
+pipelines:
+  branches:
+    main: # Only for main branch
+      - step:
+          caches:
+            - pip
+          name: Deploy to Heroku # Step name
+          deployment: production # Target environment
+          script:
+            - git push https://heroku:$HEROKU_API_KEY@git.heroku.com/$HEROKU_APP_NAME.git HEAD # Push & Deploy to Heroku app

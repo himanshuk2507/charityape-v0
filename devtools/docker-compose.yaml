@@ -1,0 +1,62 @@
+version: "3.2"
+services:
+    skraggle-backend:
+        build:
+            context: ../new_skraggle
+        image: skraggle-backend
+        container_name: skraggle-backend
+        env_file: ../stage.env
+        ports:
+            - "5100:80"
+        networks:
+            - skraggle
+        volumes:
+            - type: bind
+              source: ..
+              target: /app
+        command: sh -c "chmod +x devtools/start.sh && devtools/start.sh && ../start.sh"
+        stdin_open: true
+        tty: true
+        depends_on:
+            database:
+                condition: service_healthy
+    database:
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: skraggle
+        container_name: skraggle-postgres
+        image: postgres:13.4-alpine
+        networks:
+            - skraggle
+        ports:
+            - 5434:5432
+        restart: always
+        volumes:
+            - ./tmp/postgres-data_2:/var/lib/postgresql/data
+            - ./db_2:/docker-entrypoint-initdb.d/
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+            start_period: 0s
+    redis:
+        image: "redis:alpine"
+        container_name: skraggle-redis
+        command: redis-server
+        ports:
+            - "6479:6379"
+        volumes:
+            - ../redis/redis.conf:/usr/local/etc/redis/redis.conf
+        networks:
+            - skraggle
+        environment:
+            - REDIS_REPLICATION_MODE=master
+
+networks:
+    skraggle:
+        name: skraggle
+        driver: bridge
+        ipam:
+            driver: default

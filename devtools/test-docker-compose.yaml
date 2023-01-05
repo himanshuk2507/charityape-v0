@@ -1,0 +1,50 @@
+version: "3.2"
+services:
+    skraggle-backend:
+        build:
+            context: ..
+        image: skraggle-backend
+        container_name: skraggle-backend
+        env_file: ../.env
+        ports:
+            - "5100:80"
+        networks:
+            - skraggle
+        volumes:
+            - type: bind
+              source: ..
+              target: /app
+        command: sh devtools/automated-test.sh
+        stdin_open: true
+        tty: true
+        depends_on:
+            - database
+    database:
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: skraggle
+        container_name: skraggle-postgres
+        image: postgres:latest
+        networks:
+            - skraggle
+        ports:
+            - 5434:5432
+        restart: always
+    redis:
+        image: "redis:alpine"
+        container_name: skraggle-redis
+        command: redis-server
+        ports:
+            - "6479:6379"
+        networks:
+            - skraggle
+        environment:
+            - REDIS_REPLICATION_MODE=master
+
+networks:
+    skraggle:
+        name: skraggle
+        driver: bridge
+        ipam:
+            driver: default

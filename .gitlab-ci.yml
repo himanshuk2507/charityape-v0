@@ -1,0 +1,33 @@
+stages:
+    - deploy
+    - test
+
+test:
+    stage: test
+    image: tmaier/docker-compose:latest
+    services:
+        - docker:dind
+    variables:
+        DOCKER_TLS_CERTDIR: ""
+    script:
+        - echo $TEST_ENV > .env
+        - docker system prune
+        - docker-compose -f devtools/test-docker-compose.yaml up --build -d
+    after_script:
+        - sh devtools/after-tests.sh
+    rules:
+        - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
+        - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+
+deploy:
+    stage: deploy
+    image: alpine:latest
+    script:
+        - chmod 600 $DEPLOY_SERVER_PRIVATE_KEY
+        - apk update
+        - apk add --update openssh-client
+        - ssh -i $DEPLOY_SERVER_PRIVATE_KEY -o StrictHostKeyChecking=no $DEPLOYMENT_SERVER_USERNAME@$DEPLOYMENT_SERVER_IP 'bash -s' < $DEPLOY_SH
+    only:
+        - develop
+    tags:
+        - docker

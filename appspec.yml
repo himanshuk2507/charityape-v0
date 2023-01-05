@@ -1,0 +1,12 @@
+version: 0.0
+os: linux
+files:
+- source: /
+  destination: /home/ubuntu/skraggle
+overwrite: true
+hooks:
+  BeforeInstall:
+    - location: remove.sh
+  AfterInstall:
+    - location: shell_script.sh
+      timeout: 120
